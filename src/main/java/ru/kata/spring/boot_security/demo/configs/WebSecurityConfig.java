@@ -24,23 +24,27 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         this.myUserService = myUserService;
     }
 
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
+                .csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/", "/home").permitAll()
+                .antMatchers("/", "/home", "/login").permitAll()
                 .antMatchers("/admin/**").hasRole("ADMIN")
                 .antMatchers("/user").hasAnyRole("USER", "ADMIN")
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
                 .loginPage("/login")
-                .permitAll()
                 .successHandler(successUserHandler)
+                .permitAll()
                 .and()
                 .logout()
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login?logout")
+                .logoutUrl("/logout") // URL для выхода
+                .logoutSuccessUrl("/login?logout") // Перенаправление после выхода
+                .invalidateHttpSession(true) // Уничтожение сессии
+                .deleteCookies("JSESSIONID") // Удаление cookies
                 .permitAll();
     }
 

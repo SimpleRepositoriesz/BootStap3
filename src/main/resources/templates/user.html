@@ -40,7 +40,9 @@
     </table>
   </div>
   <p>
-    <a href="/logout" style="padding: 10px; background-color: #FF0000; color: white; text-decoration: none; border-radius: 5px;">Выход из системы</a>
+  <form th:action="@{/logout}" method="post">
+    <input type="submit" value="Выход из системы" style="padding: 10px; background-color: #FF0000; color: white; text-decoration: none; border-radius: 5px;">
+  </form>
   </p>
   </body>
   </html>
