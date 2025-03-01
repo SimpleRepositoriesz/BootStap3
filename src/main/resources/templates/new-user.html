@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Page</title>
+</head>
+<body>
+<h1>Добавить нового пользователя</h1>
+<h1><small>(Новому пользователю автоматически присваивается роль USER)</small></h1>
+
+<form th:action="@{/admin/save}" th:object="${user}" method="post">
+  <label>Имя: <input type="text" th:field="*{username}" required></label><br>
+  <label>Пароль: <input type="password" th:field="*{password}" required></label><br>
+  <label>Почта: <input type="email" th:field="*{email}" required></label><br>
+  <button type="submit">Сохранить</button>
+</form>
+<a href="/admin">Вернуться к настройкам</a>
+</body>
+</html>

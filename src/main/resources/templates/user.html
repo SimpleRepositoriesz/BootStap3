@@ -1,11 +1,46 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org" xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
+  <meta charset="UTF-8">
+
+  <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+  <head>
     <title>Spring Security Example</title>
-</head>
-<body>
-<h1>User, welcome spring boot security page!</h1>
+  </head>
+  <body>
+  <h1>Добро пожаловать на главную страницу вашего профиля!</h1>
 
-
-</body>
-</html>
+  <div sec:authorize="isAuthenticated()">
+    <h2>Ваши данные:</h2>
+    <table border="1" cellpadding="10" cellspacing="0" style="width: 100%; margin-top: 20px;">
+      <thead>
+      <tr>
+        <th>Поле</th>
+        <th>Значение</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>Имя пользователя</td>
+        <td th:text="${user.username}"></td>
+      </tr>
+      <tr>
+        <td>Пароль</td>
+        <td th:text="${user.password}"></td>
+      </tr>
+      <tr>
+        <td>Email</td>
+        <td th:text="${user.email}"></td>
+      </tr>
+      <tr>
+        <td>Роль</td>
+        <td th:text="${user.roles}"></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    <a href="/logout" style="padding: 10px; background-color: #FF0000; color: white; text-decoration: none; border-radius: 5px;">Выход из системы</a>
+  </p>
+  </body>
+  </html>
