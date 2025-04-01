@@ -1,84 +1,87 @@
 package ru.kata.spring.boot_security.demo.controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import ru.kata.spring.boot_security.demo.entities.Role;
 import ru.kata.spring.boot_security.demo.entities.User;
 import ru.kata.spring.boot_security.demo.services.RoleService;
 import ru.kata.spring.boot_security.demo.services.UserService;
 
-import java.util.List;
-import java.util.Set;
+import javax.validation.Valid;
+import java.security.Principal;
 
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
-
-    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
-
     private final UserService userService;
     private final RoleService roleService;
 
+    @Autowired
     public AdminController(UserService userService, RoleService roleService) {
         this.userService = userService;
         this.roleService = roleService;
     }
 
     @GetMapping
-    public String adminPage(Model model) {
-        model.addAttribute("users", userService.getAllUsers());
+    public String getAllUsers(Model model) {
+        model.addAttribute("users", userService.findAll());
         return "admin";
     }
 
-    @GetMapping("/new")
-    public String newUserForm(Model model) {
-        model.addAttribute("user", new User());
-        return "new-user";
+    @GetMapping("/info")
+    public String getAdminInfo(Principal principal, Model model) {
+        User admin = userService.findByEmail(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        model.addAttribute("admin", admin);
+        return "admin-info";
     }
 
-    @PostMapping("/save")
-    public String saveUser(@ModelAttribute("user") User user) {
-        if (user.getRoles() == null || user.getRoles().isEmpty()) {
-            Role defaultRole = roleService.findByName("ROLE_USER");
-            user.setRoles(Set.of(defaultRole));
+    @GetMapping("/create")
+    public String createUserForm(Model model) {
+        model.addAttribute("user", new User());
+        model.addAttribute("allRoles", roleService.getRoles());
+        return "create-user";
+    }
+
+    @PostMapping("/create")
+    public String createUser(@Valid @ModelAttribute("user") User user, BindingResult bindingResult, Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("allRoles", roleService.getRoles());
+            return "create-user";
         }
         userService.saveUser(user);
         return "redirect:/admin";
     }
 
-    @GetMapping("/edit/{id}")
-    public String editUserForm(@PathVariable Long id, Model model) {
-        User user = userService.getUserById(id);
-        if (user == null) {
-            throw new RuntimeException("User not found with id: " + id);
-        }
-        logger.debug("Editing user: {}", user);
-        List<Role> allRoles = roleService.getListRoles();
-        model.addAttribute("user", user);
-        model.addAttribute("allRoles", allRoles);
-        return "edit-user";
+    @PostMapping
+    public String saveNewUser(@ModelAttribute("user") User user) {
+        userService.saveUser(user);
+        return "redirect:/admin";
     }
 
-    @PostMapping("/update")
-    public String updateUser(@ModelAttribute("user") User user) {
-        User existingUser = userService.getUserById(user.getId());
-        if (existingUser == null) {
-            throw new RuntimeException("User not found with id: " + user.getId());
+    @GetMapping("/update")
+    public String updateUserForm(@RequestParam Long id, Model model) {
+        User user = userService.findById(id);
+        model.addAttribute("user", user);
+        model.addAttribute("allRoles", roleService.getRoles());
+        return "update-user";
+    }
+
+    @PutMapping("/update")
+    public String updateUser(@ModelAttribute("user") User user, BindingResult bindingResult, Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("roles", roleService.getRoles());
+            return "update-user";
         }
         userService.updateUser(user);
         return "redirect:/admin";
     }
 
-    @GetMapping("/delete/{id}")
-    public String deleteUser(@PathVariable Long id) {
-        User user = userService.getUserById(id);
-        if (user == null) {
-            throw new RuntimeException("User not found with id: " + id);
-        }
-        userService.deleteUser(id);
+    @DeleteMapping()
+    public String deleteUser(@RequestParam(value = "id") Long id) {
+        userService.deleteById(id);
         return "redirect:/admin";
     }
 }

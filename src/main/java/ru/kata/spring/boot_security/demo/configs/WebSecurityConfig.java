@@ -2,73 +2,75 @@ package ru.kata.spring.boot_security.demo.configs;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import ru.kata.spring.boot_security.demo.services.MyUserService;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
+import org.springframework.web.filter.HiddenHttpMethodFilter;
+import ru.kata.spring.boot_security.demo.security.UserDetailsServiceImp;
 
-@Configuration
+import javax.sql.DataSource;
+
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-
     private final SuccessUserHandler successUserHandler;
-    private final MyUserService myUserService;
+    private final UserDetailsServiceImp userDetailsServiceImp;
+
 
     @Autowired
-    public WebSecurityConfig(SuccessUserHandler successUserHandler, MyUserService myUserService) {
+    public WebSecurityConfig(SuccessUserHandler successUserHandler, UserDetailsServiceImp userDetailsServiceImp) {
         this.successUserHandler = successUserHandler;
-        this.myUserService = myUserService;
+        this.userDetailsServiceImp = userDetailsServiceImp;
     }
 
-    @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-                .csrf().disable() // Отключение CSRF (для тестирования)
                 .authorizeRequests()
-                .antMatchers("/", "/home", "/login").permitAll() // Разрешить всем
-                .antMatchers("/admin/**").hasRole("ADMIN") // Только для ADMIN
-                .antMatchers("/user/**").hasAnyRole("USER", "ADMIN") // Для USER и ADMIN
-                .anyRequest().authenticated() // Все остальные запросы требуют аутентификации
+                .antMatchers("/login").permitAll()
+                .antMatchers("/admin/**", "/admin").hasRole("ADMIN")
+                .antMatchers("/user").hasAnyRole("USER", "ADMIN")
+                .antMatchers("/", "/info-page").permitAll()
+                .anyRequest().authenticated()
                 .and()
                 .formLogin()
-                .loginPage("/login") // Страница входа
-                .successHandler(successUserHandler) // Обработчик успешного входа
+                .loginPage("/login")
+                .loginProcessingUrl("/login")
+                .usernameParameter("username")
+                .passwordParameter("password")
+                .successHandler(successUserHandler)
                 .permitAll()
                 .and()
                 .logout()
-                .logoutUrl("/logout") // URL для выхода
-                .logoutSuccessUrl("/login?logout") // Перенаправление после выхода
-                .invalidateHttpSession(true) // Уничтожение сессии
-                .deleteCookies("JSESSIONID") // Удаление cookies
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login?logout")
                 .permitAll();
     }
 
-    @Override
-    public void configure(WebSecurity web) throws Exception {
-        web.ignoring().antMatchers("/css/**", "/js/**", "/images/**"); // Разрешить статические ресурсы
-    }
 
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.authenticationProvider(authenticationProvider()); // Использование DaoAuthenticationProvider
+    @Bean
+    public JdbcUserDetailsManager users(DataSource dataSource) {
+        return new JdbcUserDetailsManager(dataSource);
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    public PasswordEncoder passwordEncoder () {
+        return new BCryptPasswordEncoder(12);
+    }
+
+
+    @Bean
+    public DaoAuthenticationProvider daoAuthenticationProvider() {
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        authenticationProvider.setPasswordEncoder(passwordEncoder());
+        authenticationProvider.setUserDetailsService(userDetailsServiceImp);
+        return authenticationProvider;
     }
 
     @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setPasswordEncoder(passwordEncoder());
-        authProvider.setUserDetailsService(myUserService);
-        return authProvider;
+    public HiddenHttpMethodFilter hiddenHttpMethodFilter() {
+        return new HiddenHttpMethodFilter();
     }
 }

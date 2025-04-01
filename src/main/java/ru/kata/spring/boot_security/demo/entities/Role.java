@@ -1,32 +1,51 @@
 package ru.kata.spring.boot_security.demo.entities;
 
-import lombok.Data;
-import org.springframework.security.core.GrantedAuthority;
 
 import javax.persistence.*;
+import java.util.Set;
 
 @Entity
-@Data
 @Table(name = "roles")
-public class Role implements GrantedAuthority {
-
+public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(unique = true)
+    private String roles;
 
-    @Column(unique = true, nullable = false)
-    private String name;
+    @ManyToMany(mappedBy = "roles", fetch = FetchType.EAGER)
+    private Set<User> users;
 
-    // Конструктор по умолчанию (обязателен для JPA)
-    public Role() {}
-
-    // Конструктор с параметром (для удобства создания ролей)
-    public Role(String name) {
-        this.name = name;
+    public Long getId() {
+        return id;
     }
 
+    public Set<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Set<User> users) {
+        this.users = users;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getRoles() {
+        return roles;
+    }
+
+    public void setRoles(String roles) {
+        this.roles = roles;
+    }
+
+
     @Override
-    public String getAuthority() {
-        return name;
+    public String toString() {
+        return "Role{" +
+                "id=" + id +
+                ", roles='" + roles + '\'' +
+                '}';
     }
 }
